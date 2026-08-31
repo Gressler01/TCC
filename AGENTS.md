@@ -2,7 +2,10 @@
 
 Read the exact versioned docs at https://docs.expo.dev/versions/v54.0.0/ before writing any code.
 
-# Projeto TCC - Bonini
+# Projeto TCC - 
+
+# Figma do projeto
+https://www.figma.com/design/MmviMLgTnIZ8GIdAjgYv7s/TCC-%E2%80%93-Granja-Bonini-%7C-Aplicativo-Mobile?node-id=0-1&p=f&t=4z23wPkcAZAQNcEa-0
 
 Aplicativo mobile para gestão da produção de morangos.
 

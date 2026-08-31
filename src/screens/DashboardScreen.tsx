@@ -17,7 +17,12 @@ const metrics = [
 
 const quickActions = ['Colheita', 'Custos', 'Vendas', 'Mais'];
 
-export function DashboardScreen() {
+type DashboardScreenProps = {
+  onNewSale?: () => void;
+  onSales?: () => void;
+};
+
+export function DashboardScreen({ onNewSale, onSales }: DashboardScreenProps) {
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <StatusBar style="dark" />
@@ -43,13 +48,21 @@ export function DashboardScreen() {
           <Text style={styles.sectionTitle}>Atividades rápidas</Text>
           <View style={styles.quickActions}>
             {quickActions.map((action) => (
-              <QuickAction key={action} label={action} />
+              <QuickAction
+                key={action}
+                label={action}
+                onPress={action === 'Vendas' ? onSales : undefined}
+              />
             ))}
           </View>
         </View>
       </ScrollView>
 
-      <BottomNavigation activeItem="home" />
+      <BottomNavigation
+        activeItem="home"
+        onAdd={onNewSale}
+        onNavigate={(item) => item === 'sales' && onSales?.()}
+      />
     </SafeAreaView>
   );
 }
