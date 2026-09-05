@@ -1,6 +1,6 @@
 # Expo HAS CHANGED
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v54.0.0/ before writing any code.
+Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
 
 # Projeto TCC - 
 
@@ -25,7 +25,7 @@ Regras:
 - O sistema não utiliza talhões.
 - Antes de alterar arquivos existentes, analisar a estrutura atual.
 - Não remover funcionalidades sem autorização.
-- Expo Router será utilizado para navegação, mas ainda não está configurado.
+- Expo Router é utilizado para navegação.
 
 ## Estrutura do projeto
 
@@ -55,23 +55,10 @@ Regras:
 - Evitar excesso de elementos visuais.
 - Manter consistência entre botões, inputs, cards e espaçamentos.
 
-## Perfis de usuário
+## Acesso ao sistema
 
 O aplicativo é de uso interno da Granja Bonini.
 
-Não existe cadastro público de usuários.
-
-Existem dois perfis:
-
-### Administrador
-- Possui acesso completo ao sistema.
-- Visualiza dashboard e indicadores.
-- Gerencia produção, colheitas, custos e vendas.
-- Pode criar e gerenciar usuários.
-
-### Funcionário
-- Possui acesso operacional limitado.
-- Pode registrar plantio e colheita.
-- Não possui acesso a custos, vendas, lucro ou indicadores administrativos.
-
-O perfil do usuário deve controlar quais telas e funcionalidades ficam disponíveis após o login.
+- O sistema não possui login, cadastro público ou níveis de acesso.
+- Ao abrir o aplicativo, o usuário deve ser direcionado ao dashboard.
+- Todos os usuários possuem acesso às mesmas telas e funcionalidades.

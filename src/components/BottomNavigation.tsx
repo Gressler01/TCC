@@ -1,9 +1,10 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '../constants/colors';
 
-type NavigationItem = 'home' | 'production' | 'sales' | 'menu';
+type NavigationItem = 'home' | 'harvest' | 'sales' | 'menu';
 
 type BottomNavigationProps = {
   activeItem: NavigationItem;
@@ -13,7 +14,7 @@ type BottomNavigationProps = {
 
 const items: { key: NavigationItem; label: string }[] = [
   { key: 'home', label: 'Início' },
-  { key: 'production', label: 'Produção' },
+  { key: 'harvest', label: 'Colheita' },
   { key: 'sales', label: 'Vendas' },
   { key: 'menu', label: 'Menu' },
 ];
@@ -24,6 +25,15 @@ export function BottomNavigation({
   onNavigate,
 }: BottomNavigationProps) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+
+  function handleNavigate(item: NavigationItem) {
+    if (item === 'harvest') {
+      if (activeItem !== 'harvest') router.navigate('/harvest');
+      return;
+    }
+    onNavigate?.(item);
+  }
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
@@ -32,7 +42,7 @@ export function BottomNavigation({
           active={activeItem === item.key}
           key={item.key}
           label={item.label}
-          onPress={() => onNavigate?.(item.key)}
+          onPress={() => handleNavigate(item.key)}
         />
       ))}
 
@@ -50,7 +60,7 @@ export function BottomNavigation({
           active={activeItem === item.key}
           key={item.key}
           label={item.label}
-          onPress={() => onNavigate?.(item.key)}
+          onPress={() => handleNavigate(item.key)}
         />
       ))}
     </View>
@@ -65,7 +75,12 @@ type NavigationButtonProps = {
 
 function NavigationButton({ active, label, onPress }: NavigationButtonProps) {
   return (
-    <Pressable onPress={onPress} style={styles.navigationButton}>
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      style={styles.navigationButton}
+    >
       <View style={[styles.navigationDot, active && styles.navigationDotActive]} />
       <Text style={[styles.navigationLabel, active && styles.navigationLabelActive]}>
         {label}
@@ -87,6 +102,7 @@ const styles = StyleSheet.create({
   navigationButton: {
     alignItems: 'center',
     flex: 1,
+    minHeight: 44,
     gap: 9,
     paddingTop: 4,
   },

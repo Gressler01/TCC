@@ -9,6 +9,8 @@ export default function DashboardRoute() {
     <DashboardScreen
       onNewSale={() => router.push('/new-sale')}
       onSales={() => router.push('/sales')}
+      onExpenses={() => router.push('/expenses')}
+      onHarvest={() => router.navigate('/harvest')}
     />
   );
 }

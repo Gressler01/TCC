@@ -20,9 +20,16 @@ const quickActions = ['Colheita', 'Custos', 'Vendas', 'Mais'];
 type DashboardScreenProps = {
   onNewSale?: () => void;
   onSales?: () => void;
+  onExpenses?: () => void;
+  onHarvest?: () => void;
 };
 
-export function DashboardScreen({ onNewSale, onSales }: DashboardScreenProps) {
+export function DashboardScreen({ onNewSale, onSales, onExpenses, onHarvest }: DashboardScreenProps) {
+  const actionHandlers: Record<string, (() => void) | undefined> = {
+    Colheita: onHarvest,
+    Custos: onExpenses,
+    Vendas: onSales,
+  };
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <StatusBar style="dark" />
@@ -51,7 +58,7 @@ export function DashboardScreen({ onNewSale, onSales }: DashboardScreenProps) {
               <QuickAction
                 key={action}
                 label={action}
-                onPress={action === 'Vendas' ? onSales : undefined}
+                onPress={actionHandlers[action]}
               />
             ))}
           </View>
