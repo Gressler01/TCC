@@ -1,145 +1,56 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '../constants/colors';
 
-type NavigationItem = 'home' | 'harvest' | 'sales' | 'menu';
+export type NavigationItem = 'home' | 'harvest' | 'sales' | 'expenses' | 'menu';
 
-type BottomNavigationProps = {
-  activeItem: NavigationItem;
-  onAdd?: () => void;
-  onNavigate?: (item: NavigationItem) => void;
-};
+type BottomNavigationProps = { activeItem: NavigationItem };
 
-const items: { key: NavigationItem; label: string }[] = [
-  { key: 'home', label: 'Início' },
-  { key: 'harvest', label: 'Colheita' },
-  { key: 'sales', label: 'Vendas' },
-  { key: 'menu', label: 'Menu' },
+const items: { key: NavigationItem; label: string; path: '/dashboard' | '/harvest' | '/sales' | '/expenses' | '/menu' }[] = [
+  { key: 'home', label: 'Início', path: '/dashboard' },
+  { key: 'harvest', label: 'Colheita', path: '/harvest' },
+  { key: 'sales', label: 'Vendas', path: '/sales' },
+  { key: 'expenses', label: 'Custos', path: '/expenses' },
+  { key: 'menu', label: 'Menu', path: '/menu' },
 ];
 
-export function BottomNavigation({
-  activeItem,
-  onAdd,
-  onNavigate,
-}: BottomNavigationProps) {
+export function BottomNavigation({ activeItem }: BottomNavigationProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  function handleNavigate(item: NavigationItem) {
-    if (item === 'harvest') {
-      if (activeItem !== 'harvest') router.navigate('/harvest');
-      return;
-    }
-    onNavigate?.(item);
-  }
-
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
-      {items.slice(0, 2).map((item) => (
-        <NavigationButton
-          active={activeItem === item.key}
-          key={item.key}
-          label={item.label}
-          onPress={() => handleNavigate(item.key)}
-        />
-      ))}
-
-      <Pressable
-        accessibilityLabel="Adicionar registro"
-        accessibilityRole="button"
-        onPress={onAdd}
-        style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
-      >
-        <Text style={styles.addLabel}>+</Text>
-      </Pressable>
-
-      {items.slice(2).map((item) => (
-        <NavigationButton
-          active={activeItem === item.key}
-          key={item.key}
-          label={item.label}
-          onPress={() => handleNavigate(item.key)}
-        />
-      ))}
+    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      {items.map((item) => {
+        const active = activeItem === item.key;
+        return (
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
+            key={item.key}
+            onPress={() => !active && router.replace(item.path)}
+            style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+          >
+            <View style={[styles.dot, active && styles.dotActive]} />
+            <Text style={[styles.label, active && styles.labelActive]}>{item.label}</Text>
+          </Pressable>
+        );
+      })}
     </View>
-  );
-}
-
-type NavigationButtonProps = {
-  active: boolean;
-  label: string;
-  onPress: () => void;
-};
-
-function NavigationButton({ active, label, onPress }: NavigationButtonProps) {
-  return (
-    <Pressable
-      accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
-      onPress={onPress}
-      style={styles.navigationButton}
-    >
-      <View style={[styles.navigationDot, active && styles.navigationDotActive]} />
-      <Text style={[styles.navigationLabel, active && styles.navigationLabelActive]}>
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'flex-start',
-    backgroundColor: colors.white,
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    flexDirection: 'row',
-    minHeight: 70,
-    paddingTop: 8,
+    alignItems: 'flex-start', backgroundColor: colors.white, borderTopColor: colors.border,
+    borderTopWidth: 1, borderTopLeftRadius: 34, borderTopRightRadius: 34,
+    flexDirection: 'row', minHeight: 88, paddingHorizontal: 12, paddingTop: 16,
   },
-  navigationButton: {
-    alignItems: 'center',
-    flex: 1,
-    minHeight: 44,
-    gap: 9,
-    paddingTop: 4,
-  },
-  navigationDot: {
-    borderColor: colors.textMuted,
-    borderRadius: 5,
-    borderWidth: 1,
-    height: 10,
-    width: 10,
-  },
-  navigationDotActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  navigationLabel: {
-    color: colors.textMuted,
-    fontSize: 9,
-  },
-  navigationLabelActive: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  addButton: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 24,
-    height: 48,
-    justifyContent: 'center',
-    width: 48,
-  },
-  addLabel: {
-    color: colors.white,
-    fontSize: 28,
-    fontWeight: '500',
-    lineHeight: 32,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
+  button: { alignItems: 'center', flex: 1, gap: 10, minHeight: 48 },
+  dot: { borderColor: colors.textMuted, borderRadius: 6, borderWidth: 1.2, height: 12, width: 12 },
+  dotActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  label: { color: colors.textMuted, fontSize: 11 },
+  labelActive: { color: colors.primary, fontWeight: '700' },
+  pressed: { opacity: 0.65 },
 });

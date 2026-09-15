@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,13 +8,7 @@ import { MetricCard } from '../components/MetricCard';
 import { ProductionChart } from '../components/ProductionChart';
 import { QuickAction } from '../components/QuickAction';
 import { colors } from '../constants/colors';
-
-const metrics = [
-  { title: 'Produção (mês)', value: '1.250 kg', change: '+12% vs mês anterior' },
-  { title: 'Vendas (mês)', value: 'R$ 12.450,00', change: '+8% vs mês anterior' },
-  { title: 'Custos (mês)', value: 'R$ 4.230,00', change: '-5% vs mês anterior' },
-  { title: 'Lucro (mês)', value: 'R$ 8.220,00', change: '+15% vs mês anterior' },
-];
+import { listExpenses, listHarvests, listSales } from '../services/records';
 
 const quickActions = ['Colheita', 'Custos', 'Vendas', 'Mais'];
 
@@ -25,6 +20,38 @@ type DashboardScreenProps = {
 };
 
 export function DashboardScreen({ onNewSale, onSales, onExpenses, onHarvest }: DashboardScreenProps) {
+  const [summary, setSummary] = useState({ harvestGrams: 0, salesCents: 0, expensesCents: 0 });
+  const [chartData, setChartData] = useState<{ month: string; value: number }[]>([]);
+  const money = (cents: number) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  useEffect(() => {
+    Promise.all([listHarvests(), listExpenses(), listSales()]).then(([harvests, expenses, sales]) => {
+      const currentPeriod = new Date().toISOString().slice(0, 7);
+      const harvestGrams = harvests.filter((item) => item.date.startsWith(currentPeriod)).reduce((sum, item) => sum + item.quantityInGrams, 0);
+      const expensesCents = expenses.filter((item) => item.date.startsWith(currentPeriod)).reduce((sum, item) => sum + item.amountInCents, 0);
+      const salesCents = sales.filter((item) => item.date.startsWith(currentPeriod)).reduce((sum, item) => sum + item.totalInCents, 0);
+      setSummary({ harvestGrams, salesCents, expensesCents });
+
+      const months = Array.from({ length: 6 }, (_, index) => {
+        const date = new Date();
+        date.setDate(1);
+        date.setMonth(date.getMonth() - (5 - index));
+        const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        return {
+          month: date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''),
+          value: harvests.filter((item) => item.date.startsWith(period)).reduce((sum, item) => sum + item.quantityInGrams / 1000, 0),
+        };
+      });
+      setChartData(months);
+    });
+  }, []);
+
+  const metrics = [
+    { title: 'Produção (mês)', value: `${(summary.harvestGrams / 1000).toLocaleString('pt-BR')} kg`, change: 'Dados do banco' },
+    { title: 'Vendas (mês)', value: money(summary.salesCents), change: 'Dados do banco' },
+    { title: 'Custos (mês)', value: money(summary.expensesCents), change: 'Dados do banco' },
+    { title: 'Lucro (mês)', value: money(summary.salesCents - summary.expensesCents), change: 'Vendas menos custos' },
+  ];
   const actionHandlers: Record<string, (() => void) | undefined> = {
     Colheita: onHarvest,
     Custos: onExpenses,
@@ -49,7 +76,7 @@ export function DashboardScreen({ onNewSale, onSales, onExpenses, onHarvest }: D
           ))}
         </View>
 
-        <ProductionChart />
+        <ProductionChart data={chartData} />
 
         <View>
           <Text style={styles.sectionTitle}>Atividades rápidas</Text>
@@ -65,11 +92,7 @@ export function DashboardScreen({ onNewSale, onSales, onExpenses, onHarvest }: D
         </View>
       </ScrollView>
 
-      <BottomNavigation
-        activeItem="home"
-        onAdd={onNewSale}
-        onNavigate={(item) => item === 'sales' && onSales?.()}
-      />
+      <BottomNavigation activeItem="home" />
     </SafeAreaView>
   );
 }

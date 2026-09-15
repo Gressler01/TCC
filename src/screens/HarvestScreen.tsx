@@ -29,13 +29,17 @@ type HarvestScreenProps = {
 };
 
 export function HarvestScreen({ onGoHome, onSales }: HarvestScreenProps) {
-  const { harvests, period, setPeriod, addHarvest } = useHarvests();
+  const { harvests, period, setPeriod, loading, error, addHarvest } = useHarvests();
   const [formVisible, setFormVisible] = useState(false);
   const { records, totalInGrams } = getMonthlyHarvests(harvests, period);
 
-  function saveHarvest(harvest: NewHarvest) {
-    addHarvest(harvest);
-    setFormVisible(false);
+  async function saveHarvest(harvest: NewHarvest) {
+    try {
+      await addHarvest(harvest);
+      setFormVisible(false);
+    } catch {
+      // Keep the form open so the user can retry.
+    }
   }
 
   return (
@@ -75,6 +79,8 @@ export function HarvestScreen({ onGoHome, onSales }: HarvestScreenProps) {
             </View>
             <PrimaryButton label="+ Nova colheita" onPress={() => setFormVisible(true)} />
             <Text style={styles.sectionTitle}>Colheitas do mês</Text>
+            {loading ? <Text style={styles.feedback}>Carregando colheitas...</Text> : null}
+            {error ? <Text accessibilityRole="alert" style={styles.feedback}>{error}</Text> : null}
           </View>
         }
         ListEmptyComponent={
@@ -85,14 +91,7 @@ export function HarvestScreen({ onGoHome, onSales }: HarvestScreenProps) {
         }
       />
 
-      <BottomNavigation
-        activeItem="harvest"
-        onAdd={() => setFormVisible(true)}
-        onNavigate={(item) => {
-          if (item === 'home') onGoHome();
-          if (item === 'sales') onSales();
-        }}
-      />
+      <BottomNavigation activeItem="harvest" />
 
       <Modal
         visible={formVisible}
@@ -156,6 +155,7 @@ const styles = StyleSheet.create({
   totalValue: { color: colors.primary, fontSize: 28, fontWeight: '700' },
   recordCount: { color: colors.textMuted, fontSize: 12 },
   sectionTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  feedback: { color: colors.textMuted, fontSize: 12, textAlign: 'center' },
   separator: { height: 14 },
   emptyState: { paddingVertical: 40, gap: 10, alignItems: 'center' },
   emptyTitle: { color: colors.text, fontSize: 14, fontWeight: '600', textAlign: 'center' },

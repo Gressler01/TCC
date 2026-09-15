@@ -2,25 +2,21 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../constants/colors';
 
-const productionData = [
-  { month: 'Jan', value: 35 },
-  { month: 'Fev', value: 75 },
-  { month: 'Mar', value: 62 },
-  { month: 'Abr', value: 92 },
-  { month: 'Mai', value: 58 },
-  { month: 'Jun', value: 110 },
-];
+type ProductionChartProps = {
+  data: { month: string; value: number }[];
+};
 
-export function ProductionChart() {
+export function ProductionChart({ data }: ProductionChartProps) {
+  const largestValue = Math.max(...data.map((item) => item.value), 1);
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Produção dos últimos 6 meses (kg)</Text>
 
       <View style={styles.chart}>
-        {productionData.map((item) => (
+        {data.map((item) => (
           <View key={item.month} style={styles.column}>
             <View style={styles.barArea}>
-              <View style={[styles.bar, { height: item.value }]} />
+              <View style={[styles.bar, { height: Math.max((item.value / largestValue) * 105, 2) }]} />
             </View>
             <Text style={styles.month}>{item.month}</Text>
           </View>

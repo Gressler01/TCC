@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -5,24 +6,28 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomNavigation } from '../components/BottomNavigation';
 import { SaleCard } from '../components/SaleCard';
 import { colors } from '../constants/colors';
-
-const sales = [
-  { client: 'Comércio Local', date: '05/05/2025', quantity: '45 kg', value: 'R$ 2.150,00' },
-  { client: 'Mercado Central', date: '10/05/2025', quantity: '80 kg', value: 'R$ 3.800,00' },
-  {
-    client: 'Supermercado Bom Preço',
-    date: '15/05/2025',
-    quantity: '60 kg',
-    value: 'R$ 2.900,00',
-  },
-  { client: 'Feira Municipal', date: '20/05/2025', quantity: '28 kg', value: 'R$ 1.600,00' },
-];
+import { listSales } from '../services/records';
+import type { Sale } from '../types/sale';
 
 type SalesScreenProps = {
   onGoHome: () => void;
 };
 
 export function SalesScreen({ onGoHome }: SalesScreenProps) {
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    listSales()
+      .then(setSales)
+      .catch(() => setError('Não foi possível carregar as vendas.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const total = sales.reduce((sum, sale) => sum + sale.totalInCents, 0);
+  const formatMoney = (cents: number) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const formatDate = (date: string) => date.split('-').reverse().join('/');
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <StatusBar style="dark" />
@@ -56,21 +61,26 @@ export function SalesScreen({ onGoHome }: SalesScreenProps) {
         </View>
 
         <View style={styles.salesList}>
+          {loading ? <Text style={styles.feedback}>Carregando vendas...</Text> : null}
+          {error ? <Text accessibilityRole="alert" style={styles.feedback}>{error}</Text> : null}
           {sales.map((sale) => (
-            <SaleCard key={`${sale.client}-${sale.date}`} {...sale} />
+            <SaleCard
+              key={sale.id}
+              client={sale.client}
+              date={formatDate(sale.date)}
+              quantity={sale.saleType === 'tray' ? `${sale.quantity} bandejas` : `${sale.quantity} kg`}
+              value={formatMoney(sale.totalInCents)}
+            />
           ))}
         </View>
 
         <View style={styles.totalCard}>
           <Text style={styles.totalLabel}>Total do período</Text>
-          <Text style={styles.totalValue}>R$ 10.450,00</Text>
+          <Text style={styles.totalValue}>{formatMoney(total)}</Text>
         </View>
       </ScrollView>
 
-      <BottomNavigation
-        activeItem="sales"
-        onNavigate={(item) => item === 'home' && onGoHome()}
-      />
+      <BottomNavigation activeItem="sales" />
     </SafeAreaView>
   );
 }
@@ -154,4 +164,5 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.65,
   },
+  feedback: { color: colors.textMuted, fontSize: 12, textAlign: 'center' },
 });

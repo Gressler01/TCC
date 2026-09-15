@@ -17,6 +17,7 @@ import { FormField } from '../components/FormField';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SaleType, SaleTypeSelector } from '../components/SaleTypeSelector';
 import { colors } from '../constants/colors';
+import { createSale } from '../services/records';
 
 type NewSaleScreenProps = {
   onBack: () => void;
@@ -37,15 +38,34 @@ export function NewSaleScreen({ onBack, onGoHome }: NewSaleScreenProps) {
     setQuantity('');
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!client.trim() || !quantity.trim() || !totalValue.trim()) {
       Alert.alert('Campos obrigatórios', 'Preencha cliente, quantidade e valor da venda.');
       return;
     }
 
-    Alert.alert('Venda registrada', 'Os dados foram salvos apenas como demonstração.', [
-      { text: 'OK', onPress: onBack },
-    ]);
+    const parsedQuantity = Number(quantity.replace(',', '.'));
+    const normalizedValue = totalValue.replace(/R\$\s?/g, '').replace(/\./g, '').replace(',', '.');
+    const totalInCents = Math.round(Number(normalizedValue) * 100);
+    if (!Number.isFinite(parsedQuantity) || parsedQuantity <= 0 || !Number.isSafeInteger(totalInCents) || totalInCents <= 0) {
+      Alert.alert('Valores inválidos', 'Informe uma quantidade e um valor maiores que zero.');
+      return;
+    }
+
+    try {
+      await createSale({
+        client: client.trim(),
+        date: new Date().toISOString().slice(0, 10),
+        saleType,
+        quantity: parsedQuantity,
+        totalInCents,
+      });
+      Alert.alert('Venda registrada', 'A venda foi salva no banco de dados.', [
+        { text: 'OK', onPress: onBack },
+      ]);
+    } catch {
+      Alert.alert('Erro ao salvar', 'Não foi possível registrar a venda. Tente novamente.');
+    }
   }
 
   return (
@@ -113,10 +133,7 @@ export function NewSaleScreen({ onBack, onGoHome }: NewSaleScreenProps) {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <BottomNavigation
-        activeItem="sales"
-        onNavigate={(item) => item === 'home' && onGoHome()}
-      />
+      <BottomNavigation activeItem="sales" />
     </SafeAreaView>
   );
 }

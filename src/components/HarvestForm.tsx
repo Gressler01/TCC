@@ -8,7 +8,7 @@ import { parseHarvestQuantity } from '../utils/harvests';
 import { FormField } from './FormField';
 import { PrimaryButton } from './PrimaryButton';
 
-type HarvestFormProps = { onSave: (harvest: NewHarvest) => void };
+type HarvestFormProps = { onSave: (harvest: NewHarvest) => Promise<void> };
 
 export function HarvestForm({ onSave }: HarvestFormProps) {
   const [date, setDate] = useState(() => formatDate(toLocalDateString(new Date())));
@@ -17,7 +17,7 @@ export function HarvestForm({ onSave }: HarvestFormProps) {
   const [error, setError] = useState('');
   const submitted = useRef(false);
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (submitted.current) return;
     const parsedDate = parseDate(date);
     const quantityInGrams = parseHarvestQuantity(quantity);
@@ -36,7 +36,11 @@ export function HarvestForm({ onSave }: HarvestFormProps) {
     }
 
     submitted.current = true;
-    onSave({ date: parsedDate, quantityInGrams, notes: notes.trim() });
+    try {
+      await onSave({ date: parsedDate, quantityInGrams, notes: notes.trim() });
+    } finally {
+      submitted.current = false;
+    }
   }
 
   return (

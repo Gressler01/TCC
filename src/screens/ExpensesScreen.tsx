@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View,
+  Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,8 +10,8 @@ import { ExpenseCard } from '../components/ExpenseCard';
 import { ExpenseForm } from '../components/ExpenseForm';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { colors } from '../constants/colors';
-import { mockExpenses } from '../constants/mockExpenses';
-import { NewExpense } from '../types/expense';
+import { createExpense, listExpenses } from '../services/records';
+import type { Expense, NewExpense } from '../types/expense';
 import { formatExpenseAmount } from '../utils/expenses';
 
 type ExpensesScreenProps = {
@@ -20,9 +20,11 @@ type ExpensesScreenProps = {
 };
 
 export function ExpensesScreen({ onGoHome, onSales }: ExpensesScreenProps) {
-  const [expenses, setExpenses] = useState(mockExpenses);
-  const [period, setPeriod] = useState('2025-05');
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [period, setPeriod] = useState(() => new Date().toISOString().slice(0, 7));
   const [formVisible, setFormVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [year, month] = period.split('-').map(Number);
   const periodLabel = new Date(year, month - 1, 1).toLocaleDateString('pt-BR', {
     month: 'long', year: 'numeric',
@@ -35,10 +37,25 @@ export function ExpensesScreen({ onGoHome, onSales }: ExpensesScreenProps) {
     setPeriod(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`);
   }
 
-  function saveExpense(expense: NewExpense) {
-    setExpenses((current) => [{ ...expense, id: `expense-${Date.now()}` }, ...current]);
-    setPeriod(expense.date.slice(0, 7));
-    setFormVisible(false);
+  useEffect(() => {
+    listExpenses()
+      .then((records) => {
+        setExpenses(records);
+        if (records[0]) setPeriod(records[0].date.slice(0, 7));
+      })
+      .catch(() => setLoadError('Não foi possível carregar os gastos.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function saveExpense(expense: NewExpense) {
+    try {
+      const record = await createExpense(expense);
+      setExpenses((current) => [record, ...current]);
+      setPeriod(expense.date.slice(0, 7));
+      setFormVisible(false);
+    } catch {
+      Alert.alert('Erro ao salvar', 'Não foi possível registrar o gasto. Tente novamente.');
+    }
   }
 
   return (
@@ -66,6 +83,8 @@ export function ExpensesScreen({ onGoHome, onSales }: ExpensesScreenProps) {
         </View>
 
         <View style={styles.list}>
+          {loading ? <Text style={styles.feedback}>Carregando gastos...</Text> : null}
+          {loadError ? <Text accessibilityRole="alert" style={styles.feedback}>{loadError}</Text> : null}
           {visibleExpenses.map((expense) => <ExpenseCard key={expense.id} {...expense} />)}
           {visibleExpenses.length === 0 && (
             <View style={styles.emptyState}>
@@ -81,14 +100,7 @@ export function ExpensesScreen({ onGoHome, onSales }: ExpensesScreenProps) {
         <PrimaryButton label="+ Novo gasto" onPress={() => setFormVisible(true)} />
       </ScrollView>
 
-      <BottomNavigation
-        activeItem="menu"
-        onAdd={() => setFormVisible(true)}
-        onNavigate={(item) => {
-          if (item === 'home') onGoHome();
-          if (item === 'sales') onSales();
-        }}
-      />
+      <BottomNavigation activeItem="expenses" />
 
       <Modal visible={formVisible} animationType="slide" onRequestClose={() => setFormVisible(false)}>
         <SafeAreaView style={styles.safeArea}>
@@ -130,4 +142,5 @@ const styles = StyleSheet.create({
   emptyState: { paddingVertical: 48, gap: 10, alignItems: 'center' },
   emptyTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
   emptyText: { color: colors.textMuted, fontSize: 12 },
+  feedback: { color: colors.textMuted, fontSize: 12, textAlign: 'center' },
 });

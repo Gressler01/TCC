@@ -22,7 +22,6 @@ Regras:
 - Evitar bibliotecas desnecessárias.
 - Manter identidade visual baseada no Figma.
 - Cor principal: verde e vermelho
-- O sistema não utiliza talhões.
 - Antes de alterar arquivos existentes, analisar a estrutura atual.
 - Não remover funcionalidades sem autorização.
 - Expo Router é utilizado para navegação.
@@ -39,10 +38,10 @@ Regras:
 
 ## Estado atual do desenvolvimento
 
-- O projeto está na fase inicial.
+- O projeto está na fase de desenvolvimento.
 - Primeiro implementar a interface e navegação.
-- Usar dados mockados inicialmente.
-- Não integrar Supabase até as telas principais estarem funcionando.
+- Fazer banco de dados junto com projeto agora.
+- Integrar Supabase já
 - Implementar uma tela por vez.
 - Após cada alteração, verificar se o projeto compila sem erros.
 
@@ -60,5 +59,4 @@ Regras:
 O aplicativo é de uso interno da Granja Bonini.
 
 - O sistema não possui login, cadastro público ou níveis de acesso.
-- Ao abrir o aplicativo, o usuário deve ser direcionado ao dashboard.
 - Todos os usuários possuem acesso às mesmas telas e funcionalidades.
