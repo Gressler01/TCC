@@ -5,5 +5,5 @@ import { SalesScreen } from '../src/screens/SalesScreen';
 export default function SalesRoute() {
   const router = useRouter();
 
-  return <SalesScreen onGoHome={() => router.replace('/dashboard')} />;
+  return <SalesScreen onNewSale={() => router.push('/new-sale')} />;
 }
