@@ -1,5 +1,9 @@
-import { Redirect } from 'expo-router';
+import { useRouter } from 'expo-router';
+
+import { WelcomeScreen } from '../src/screens/WelcomeScreen';
 
 export default function IndexRoute() {
-  return <Redirect href="/dashboard" />;
+  const router = useRouter();
+
+  return <WelcomeScreen onStart={() => router.replace('/dashboard')} />;
 }

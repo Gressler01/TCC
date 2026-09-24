@@ -1,6 +1,6 @@
 -- Execute este arquivo uma vez no SQL Editor do Supabase.
--- O aplicativo não possui autenticação. Por isso, as políticas permitem que o
--- papel público anon leia e altere os registros usando a publishable key.
+-- O aplicativo não possui autenticação. Leitura e inclusão continuam públicas.
+-- Use somente dados de demonstração até existir um controle de acesso interno.
 
 create extension if not exists pgcrypto;
 
@@ -71,24 +71,36 @@ alter table public.expenses enable row level security;
 alter table public.sales enable row level security;
 
 grant usage on schema public to anon, authenticated;
-grant select, insert, update, delete on public.harvests to anon, authenticated;
-grant select, insert, update, delete on public.expenses to anon, authenticated;
-grant select, insert, update, delete on public.sales to anon, authenticated;
+revoke update, delete on public.harvests from anon, authenticated;
+revoke update, delete on public.expenses from anon, authenticated;
+revoke update, delete on public.sales from anon, authenticated;
+grant select, insert on public.harvests to anon, authenticated;
+grant select, insert on public.expenses to anon, authenticated;
+grant select, insert on public.sales to anon, authenticated;
 
 drop policy if exists "Public access to harvests" on public.harvests;
-create policy "Public access to harvests"
-on public.harvests for all to anon, authenticated
-using (true) with check (true);
+drop policy if exists "Public read harvests" on public.harvests;
+drop policy if exists "Public insert harvests" on public.harvests;
+create policy "Public read harvests"
+on public.harvests for select to anon, authenticated using (true);
+create policy "Public insert harvests"
+on public.harvests for insert to anon, authenticated with check (true);
 
 drop policy if exists "Public access to expenses" on public.expenses;
-create policy "Public access to expenses"
-on public.expenses for all to anon, authenticated
-using (true) with check (true);
+drop policy if exists "Public read expenses" on public.expenses;
+drop policy if exists "Public insert expenses" on public.expenses;
+create policy "Public read expenses"
+on public.expenses for select to anon, authenticated using (true);
+create policy "Public insert expenses"
+on public.expenses for insert to anon, authenticated with check (true);
 
 drop policy if exists "Public access to sales" on public.sales;
-create policy "Public access to sales"
-on public.sales for all to anon, authenticated
-using (true) with check (true);
+drop policy if exists "Public read sales" on public.sales;
+drop policy if exists "Public insert sales" on public.sales;
+create policy "Public read sales"
+on public.sales for select to anon, authenticated using (true);
+create policy "Public insert sales"
+on public.sales for insert to anon, authenticated with check (true);
 
 -- Dados iniciais para teste. Os UUIDs fixos evitam duplicação ao executar
 -- este arquivo mais de uma vez.

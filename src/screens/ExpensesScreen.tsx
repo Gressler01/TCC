@@ -13,6 +13,7 @@ import { colors } from '../constants/colors';
 import { createExpense, listExpenses } from '../services/records';
 import type { Expense, NewExpense } from '../types/expense';
 import { formatExpenseAmount } from '../utils/expenses';
+import { toLocalDateString } from '../utils/dates';
 
 type ExpensesScreenProps = {
   onGoHome: () => void;
@@ -21,7 +22,7 @@ type ExpensesScreenProps = {
 
 export function ExpensesScreen({ onGoHome, onSales }: ExpensesScreenProps) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [period, setPeriod] = useState(() => new Date().toISOString().slice(0, 7));
+  const [period, setPeriod] = useState(() => toLocalDateString(new Date()).slice(0, 7));
   const [formVisible, setFormVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');

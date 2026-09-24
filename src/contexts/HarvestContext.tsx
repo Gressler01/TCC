@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 
 import { createHarvest, listHarvests } from '../services/records';
 import type { Harvest, NewHarvest } from '../types/harvest';
+import { toLocalDateString } from '../utils/dates';
 
 type HarvestContextValue = {
   harvests: Harvest[];
@@ -16,7 +17,7 @@ const HarvestContext = createContext<HarvestContextValue | null>(null);
 
 export function HarvestProvider({ children }: { children: ReactNode }) {
   const [harvests, setHarvests] = useState<Harvest[]>([]);
-  const [period, setPeriod] = useState(() => new Date().toISOString().slice(0, 7));
+  const [period, setPeriod] = useState(() => toLocalDateString(new Date()).slice(0, 7));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 

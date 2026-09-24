@@ -18,6 +18,7 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { SaleType, SaleTypeSelector } from '../components/SaleTypeSelector';
 import { colors } from '../constants/colors';
 import { createSale } from '../services/records';
+import { toLocalDateString } from '../utils/dates';
 
 type NewSaleScreenProps = {
   onBack: () => void;
@@ -44,18 +45,34 @@ export function NewSaleScreen({ onBack, onGoHome }: NewSaleScreenProps) {
       return;
     }
 
-    const parsedQuantity = Number(quantity.replace(',', '.'));
-    const normalizedValue = totalValue.replace(/R\$\s?/g, '').replace(/\./g, '').replace(',', '.');
-    const totalInCents = Math.round(Number(normalizedValue) * 100);
-    if (!Number.isFinite(parsedQuantity) || parsedQuantity <= 0 || !Number.isSafeInteger(totalInCents) || totalInCents <= 0) {
-      Alert.alert('Valores inválidos', 'Informe uma quantidade e um valor maiores que zero.');
+    const normalizedQuantity = quantity.trim().replace(',', '.');
+    const validQuantity = saleType === 'tray'
+      ? /^\d+$/.test(normalizedQuantity)
+      : /^\d+(?:\.\d{1,3})?$/.test(normalizedQuantity);
+    const parsedQuantity = Number(normalizedQuantity);
+    const normalizedValue = totalValue.trim().replace(/^R\$\s?/, '');
+    const validValue = /^(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{1,2})?$/.test(normalizedValue);
+    const [whole, fraction = ''] = normalizedValue.replace(/\./g, '').split(',');
+    const totalInCents = Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
+    if (client.trim().length > 120) {
+      Alert.alert('Cliente inválido', 'Informe um nome de cliente com até 120 caracteres.');
+      return;
+    }
+    if (!validQuantity || !Number.isFinite(parsedQuantity) || parsedQuantity <= 0 || parsedQuantity > 999999999.999) {
+      Alert.alert('Quantidade inválida', saleType === 'tray'
+        ? 'Informe um número inteiro de bandejas maior que zero.'
+        : 'Informe uma quantidade em kg maior que zero, com até três casas decimais.');
+      return;
+    }
+    if (!validValue || !Number.isSafeInteger(totalInCents) || totalInCents <= 0) {
+      Alert.alert('Valor inválido', 'Informe um valor de venda maior que zero.');
       return;
     }
 
     try {
       await createSale({
         client: client.trim(),
-        date: new Date().toISOString().slice(0, 10),
+        date: toLocalDateString(new Date()),
         saleType,
         quantity: parsedQuantity,
         totalInCents,

@@ -22,7 +22,7 @@ export function WelcomeScreen({ onLogin, onStart }: WelcomeScreenProps) {
           </View>
 
           <Text style={styles.brandName}>Granja Bonini</Text>
-          <Text style={styles.brandSubtitle}>Sistema Mobile de auxílio à Gestão da Produção e Vendas</Text>
+          <Text style={styles.brandSubtitle}>Sistema de auxílio à Gestão da Produção e Vendas</Text>
 
           <Text style={styles.description}>
             Organize sua produção.{`\n`}Acompanhe seus resultados!

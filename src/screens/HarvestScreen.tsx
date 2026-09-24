@@ -38,7 +38,7 @@ export function HarvestScreen({ onGoHome, onSales }: HarvestScreenProps) {
       await addHarvest(harvest);
       setFormVisible(false);
     } catch {
-      // Keep the form open so the user can retry.
+      throw new Error('Não foi possível registrar a colheita. Tente novamente.');
     }
   }
 

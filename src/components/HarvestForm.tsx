@@ -37,7 +37,10 @@ export function HarvestForm({ onSave }: HarvestFormProps) {
 
     submitted.current = true;
     try {
+      setError('');
       await onSave({ date: parsedDate, quantityInGrams, notes: notes.trim() });
+    } catch {
+      setError('Não foi possível registrar a colheita. Tente novamente.');
     } finally {
       submitted.current = false;
     }
