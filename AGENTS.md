@@ -38,10 +38,8 @@ Regras:
 
 ## Estado atual do desenvolvimento
 
-- O projeto está na fase de desenvolvimento.
-- Primeiro implementar a interface e navegação.
-- Fazer banco de dados junto com projeto agora.
-- Integrar Supabase já
+- O projeto está na fase final.
+
 - Implementar uma tela por vez.
 - Após cada alteração, verificar se o projeto compila sem erros.
 
