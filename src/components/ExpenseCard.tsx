@@ -1,36 +1,39 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { RecordActions, type RecordActionsProps } from './RecordActions';
 import { colors } from '../constants/colors';
 import { Expense } from '../types/expense';
 import { formatExpenseAmount, formatExpenseDate } from '../utils/expenses';
 
-export function ExpenseCard({ description, date, amountInCents }: Expense) {
+export function ExpenseCard({ description, date, amountInCents, onEdit, onDelete }: Expense & RecordActionsProps) {
   return (
     <View style={styles.card}>
-      <View style={styles.icon} accessible={false}>
-        <View style={styles.dot} />
+      <View style={styles.row}>
+        <View style={styles.icon} accessible={false}>
+          <View style={styles.dot} />
+        </View>
+        <View style={styles.details}>
+          <Text style={styles.description}>{description}</Text>
+          <Text style={styles.date}>{formatExpenseDate(date)}</Text>
+        </View>
+        <Text style={styles.amount}>{formatExpenseAmount(amountInCents)}</Text>
       </View>
-      <View style={styles.details}>
-        <Text style={styles.description}>{description}</Text>
-        <Text style={styles.date}>{formatExpenseDate(date)}</Text>
-      </View>
-      <Text style={styles.amount}>{formatExpenseAmount(amountInCents)}</Text>
+      <RecordActions onEdit={onEdit} onDelete={onDelete} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    alignItems: 'center',
     backgroundColor: colors.white,
     borderColor: colors.border,
     borderRadius: 10,
     borderWidth: 1,
-    flexDirection: 'row',
     minHeight: 72,
     padding: 12,
     gap: 12,
   },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   icon: {
     alignItems: 'center',
     backgroundColor: colors.background,

@@ -4,7 +4,7 @@
 
 1. No Supabase, abra **SQL Editor**, cole todo o conteúdo de `activate-devices.sql` e execute como `postgres`.
    O script preserva os registros, remove as políticas anteriores das tabelas `harvests`, `sales`,
-   `expenses` e `authorized_devices` e restringe leitura/inclusão às instalações autorizadas.
+   `expenses` e `authorized_devices` e restringe o acesso aos registros às instalações autorizadas.
    APKs antigos deixam de consultar/cadastrar após essa alteração. Use a nova versão do aplicativo.
 2. Em **Authentication → Sign In / Providers**, habilite **Anonymous Sign-Ins** e salve.
    Essa sessão não exige e-mail ou senha e não concede acesso aos dados por si só.
@@ -46,9 +46,9 @@ dados que já tenham sido vistos ou capturados pelo usuário.
 ## Como funciona
 
 - A chave pública sozinha não permite ler nem inserir dados nas três tabelas.
-- Uma sessão ainda não aprovada também não permite ler nem inserir dados.
-- A sessão aprovada lê e insere os mesmos registros que os demais aparelhos aprovados.
-- O aplicativo não pode aprovar a si mesmo, listar outras autorizações, atualizar ou excluir registros.
+- Uma sessão ainda não aprovada não permite consultar, cadastrar, editar ou excluir dados.
+- A sessão aprovada consulta, cadastra, edita e exclui os mesmos registros que os demais aparelhos aprovados.
+- O aplicativo não pode aprovar a si mesmo, listar outras autorizações ou alterar/excluir autorizações.
 - Falha na verificação mantém o app na tela de ativação; não há modo offline.
 - A autorização identifica uma sessão persistida, não o hardware. Proteja o celular e não compartilhe
   seus dados de sessão. Limpar dados, perder a sessão ou reinstalar pode exigir nova aprovação.
@@ -68,3 +68,13 @@ dados que já tenham sido vistos ou capturados pelo usuário.
 
 Documentação: https://supabase.com/docs/guides/auth/auth-anonymous
 e https://supabase.com/docs/guides/database/postgres/row-level-security
+
+## Habilitar edição e exclusão no banco existente
+
+Se os aparelhos já foram ativados, execute `edit-delete-records.sql` no SQL Editor
+como `postgres`. O script preserva os registros e as ativações e libera UPDATE e
+DELETE apenas para aparelhos autorizados. As versões atuais de `schema.sql` e
+`activate-devices.sql` já incluem essas permissões.
+
+Gere e instale um novo APK para receber os botões. Com um registro de teste,
+confira a edição, os totais recalculados, o cancelamento e a confirmação da exclusão.

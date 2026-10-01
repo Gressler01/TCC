@@ -1,3 +1,4 @@
+import { RecordActions, type RecordActionsProps } from './RecordActions';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../constants/colors';
@@ -5,7 +6,7 @@ import type { Harvest } from '../types/harvest';
 import { formatDate } from '../utils/dates';
 import { formatHarvestQuantity } from '../utils/harvests';
 
-export function HarvestCard({ date, quantityInGrams, notes }: Harvest) {
+export function HarvestCard({ date, quantityInGrams, notes, onEdit, onDelete }: Harvest & RecordActionsProps) {
   return (
     <View style={styles.card}>
       <View style={styles.row}>
@@ -16,6 +17,7 @@ export function HarvestCard({ date, quantityInGrams, notes }: Harvest) {
         <Text style={styles.quantity}>{formatHarvestQuantity(quantityInGrams)}</Text>
       </View>
       {notes ? <Text style={styles.notes}>{notes}</Text> : null}
+      <RecordActions onEdit={onEdit} onDelete={onDelete} />
     </View>
   );
 }

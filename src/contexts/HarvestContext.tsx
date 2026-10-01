@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
-import { createHarvest, listHarvests } from '../services/records';
+import { createHarvest, listHarvests, updateHarvest, deleteRecord } from '../services/records';
 import type { Harvest, NewHarvest } from '../types/harvest';
 import { toLocalDateString } from '../utils/dates';
 
@@ -10,6 +10,8 @@ type HarvestContextValue = {
   setPeriod: (period: string) => void;
   loading: boolean;
   error: string;
+  editHarvest: (id: string, harvest: NewHarvest) => Promise<void>;
+  removeHarvest: (id: string) => Promise<void>;
   addHarvest: (harvest: NewHarvest) => Promise<void>;
 };
 
@@ -37,8 +39,19 @@ export function HarvestProvider({ children }: { children: ReactNode }) {
     setPeriod(harvest.date.slice(0, 7));
   }
 
+  async function editHarvest(id: string, harvest: NewHarvest) {
+    const record = await updateHarvest(id, harvest);
+    setHarvests((current) => current.map((item) => item.id === id ? record : item));
+    setPeriod(record.date.slice(0, 7));
+  }
+
+  async function removeHarvest(id: string) {
+    await deleteRecord('harvests', id);
+    setHarvests((current) => current.filter((item) => item.id !== id));
+  }
+
   return (
-    <HarvestContext.Provider value={{ harvests, period, setPeriod, loading, error, addHarvest }}>
+    <HarvestContext.Provider value={{ harvests, period, setPeriod, loading, error, addHarvest, editHarvest, removeHarvest }}>
       {children}
     </HarvestContext.Provider>
   );

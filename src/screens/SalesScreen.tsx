@@ -1,15 +1,16 @@
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { NewSaleScreen } from './NewSaleScreen';
 import { BottomNavigation } from '../components/BottomNavigation';
 import { MonthFilter } from '../components/MonthFilter';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SaleCard } from '../components/SaleCard';
 import { colors } from '../constants/colors';
-import { listSales } from '../services/records';
+import { listSales, deleteRecord } from '../services/records';
 import type { Sale } from '../types/sale';
 import { toLocalDateString } from '../utils/dates';
 
@@ -18,6 +19,7 @@ type SalesScreenProps = {
 };
 
 export function SalesScreen({ onNewSale }: SalesScreenProps) {
+  const [editing, setEditing] = useState<Sale | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
   const [period, setPeriod] = useState(() => toLocalDateString(new Date()).slice(0, 7));
   const [loading, setLoading] = useState(true);
@@ -33,6 +35,11 @@ export function SalesScreen({ onNewSale }: SalesScreenProps) {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []));
+
+  async function removeSale(id: string) {
+    await deleteRecord('sales', id);
+    setSales((current) => current.filter((item) => item.id !== id));
+  }
 
   const visibleSales = sales.filter((sale) => sale.date.startsWith(period));
   const total = visibleSales.reduce((sum, sale) => sum + sale.totalInCents, 0);
@@ -66,6 +73,8 @@ export function SalesScreen({ onNewSale }: SalesScreenProps) {
           {!loading && !error && visibleSales.map((sale) => (
             <SaleCard
               key={sale.id}
+              onEdit={() => setEditing(sale)}
+              onDelete={() => removeSale(sale.id)}
               client={sale.client}
               date={formatDate(sale.date)}
               quantity={sale.saleType === 'tray' ? `${sale.quantity} bandejas` : `${sale.quantity} kg`}
@@ -83,6 +92,14 @@ export function SalesScreen({ onNewSale }: SalesScreenProps) {
         <PrimaryButton label="+ Adicionar venda" onPress={onNewSale} />
       </ScrollView>
 
+      <Modal visible={editing !== null} animationType="slide" onRequestClose={() => setEditing(null)}>
+        {editing && <NewSaleScreen initialValue={editing} onBack={() => setEditing(null)} onGoHome={() => setEditing(null)}
+          onSaved={(record) => {
+            setSales((current) => current.map((item) => item.id === record.id ? record : item).sort((a, b) => b.date.localeCompare(a.date)));
+            setPeriod(record.date.slice(0, 7));
+            setEditing(null);
+          }} />}
+      </Modal>
       <BottomNavigation activeItem="sales" />
     </SafeAreaView>
   );

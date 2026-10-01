@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View,
+  KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,7 +10,7 @@ import { ExpenseCard } from '../components/ExpenseCard';
 import { ExpenseForm } from '../components/ExpenseForm';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { colors } from '../constants/colors';
-import { createExpense, listExpenses } from '../services/records';
+import { createExpense, listExpenses, updateExpense, deleteRecord } from '../services/records';
 import type { Expense, NewExpense } from '../types/expense';
 import { formatExpenseAmount } from '../utils/expenses';
 import { toLocalDateString } from '../utils/dates';
@@ -23,6 +23,7 @@ type ExpensesScreenProps = {
 export function ExpensesScreen({ onGoHome, onSales }: ExpensesScreenProps) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [period, setPeriod] = useState(() => toLocalDateString(new Date()).slice(0, 7));
+  const [editing, setEditing] = useState<Expense | null>(null);
   const [formVisible, setFormVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -49,14 +50,17 @@ export function ExpensesScreen({ onGoHome, onSales }: ExpensesScreenProps) {
   }, []);
 
   async function saveExpense(expense: NewExpense) {
-    try {
-      const record = await createExpense(expense);
-      setExpenses((current) => [record, ...current]);
-      setPeriod(expense.date.slice(0, 7));
-      setFormVisible(false);
-    } catch {
-      Alert.alert('Erro ao salvar', 'Não foi possível registrar o gasto. Tente novamente.');
-    }
+    const record = editing ? await updateExpense(editing.id, expense) : await createExpense(expense);
+    setExpenses((current) => (editing
+      ? current.map((item) => item.id === record.id ? record : item)
+      : [record, ...current]).sort((a, b) => b.date.localeCompare(a.date)));
+    setPeriod(record.date.slice(0, 7));
+    setFormVisible(false);
+  }
+
+  async function removeExpense(id: string) {
+    await deleteRecord('expenses', id);
+    setExpenses((current) => current.filter((item) => item.id !== id));
   }
 
   return (
@@ -86,7 +90,7 @@ export function ExpensesScreen({ onGoHome, onSales }: ExpensesScreenProps) {
         <View style={styles.list}>
           {loading ? <Text style={styles.feedback}>Carregando gastos...</Text> : null}
           {loadError ? <Text accessibilityRole="alert" style={styles.feedback}>{loadError}</Text> : null}
-          {visibleExpenses.map((expense) => <ExpenseCard key={expense.id} {...expense} />)}
+          {visibleExpenses.map((expense) => <ExpenseCard key={expense.id} {...expense} onEdit={() => { setEditing(expense); setFormVisible(true); }} onDelete={() => removeExpense(expense.id)} />)}
           {visibleExpenses.length === 0 && (
             <View style={styles.emptyState}>
               <Text style={styles.emptyTitle}>Nenhum gasto neste período</Text>
@@ -98,7 +102,7 @@ export function ExpensesScreen({ onGoHome, onSales }: ExpensesScreenProps) {
           <Text style={styles.totalLabel}>Total do período</Text>
           <Text style={styles.totalValue}>{formatExpenseAmount(total)}</Text>
         </View>
-        <PrimaryButton label="+ Novo gasto" onPress={() => setFormVisible(true)} />
+        <PrimaryButton label="+ Novo gasto" onPress={() => { setEditing(null); setFormVisible(true); }} />
       </ScrollView>
 
       <BottomNavigation activeItem="expenses" />
@@ -110,11 +114,11 @@ export function ExpensesScreen({ onGoHome, onSales }: ExpensesScreenProps) {
               <Pressable accessibilityLabel="Cancelar novo gasto" accessibilityRole="button" onPress={() => setFormVisible(false)} style={styles.headerButton}>
                 <Text style={styles.backIcon}>‹</Text>
               </Pressable>
-              <Text style={styles.title}>Novo gasto</Text>
+              <Text style={styles.title}>{editing ? 'Editar gasto' : 'Novo gasto'}</Text>
               <View style={styles.headerButton} />
             </View>
             <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-              {formVisible && <ExpenseForm onSave={saveExpense} />}
+              {formVisible && <ExpenseForm initialValue={editing ?? undefined} onSave={saveExpense} />}
             </ScrollView>
           </KeyboardAvoidingView>
         </SafeAreaView>

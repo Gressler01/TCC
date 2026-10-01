@@ -33,6 +33,11 @@ test('RLS protege registros, autorizações e revogação sem apagar dados', asy
     `);
     await db.exec(migration);
     await db.exec(migration); // Reexecução segura, preserva dados e aprovações.
+    // Simula banco antigo sem os privilégios novos e aplica a atualização incremental.
+    await db.exec('revoke update, delete on public.harvests, public.expenses, public.sales from authenticated');
+    const editingMigration = await readFile(new URL('../supabase/edit-delete-records.sql', import.meta.url), 'utf8');
+    await db.exec(editingMigration);
+    await db.exec(editingMigration);
     const asRole = async (role, id = '') => {
       await db.exec('reset role');
       await db.query("select set_config('request.jwt.claim.sub', $1, false)", [id]);
@@ -48,6 +53,8 @@ test('RLS protege registros, autorizações e revogação sem apagar dados', asy
     for (const [table, insert] of Object.entries(inserts)) {
       await denied(`select * from public.${table}`);
       await denied(insert);
+      await denied(`update public.${table} set created_at = now()`);
+      await denied(`delete from public.${table}`);
     }
     await asRole('authenticated', pending);
     assert.equal((await db.query('select * from public.authorized_devices')).rows.length, 0);
@@ -55,6 +62,8 @@ test('RLS protege registros, autorizações e revogação sem apagar dados', asy
     for (const [table, insert] of Object.entries(inserts)) {
       assert.equal((await db.query(`select * from public.${table}`)).rows.length, 0);
       await denied(insert);
+      assert.equal((await db.query(`update public.${table} set created_at = now() returning id`)).rows.length, 0);
+      assert.equal((await db.query(`delete from public.${table} returning id`)).rows.length, 0);
     }
     await asRole('authenticated', approved);
     assert.equal((await db.query('select * from public.authorized_devices')).rows.length, 1);
@@ -63,8 +72,11 @@ test('RLS protege registros, autorizações e revogação sem apagar dados', asy
     for (const [table, insert] of Object.entries(inserts)) {
       assert.equal((await db.query(`select * from public.${table}`)).rows.length, 1);
       await db.exec(insert);
-      await denied(`delete from public.${table}`);
-      await denied(`update public.${table} set created_at = now()`);
+      const rows = (await db.query(`select id from public.${table}`)).rows;
+      const column = table === 'harvests' ? 'quantity_grams' : table === 'expenses' ? 'amount_cents' : 'total_cents';
+      const updated = await db.query(`update public.${table} set ${column} = 3500 where id = $1 returning ${column}`, [rows[0].id]);
+      assert.equal(Number(updated.rows[0][column]), 3500);
+      assert.equal((await db.query(`delete from public.${table} where id = $1 returning id`, [rows[1].id])).rows.length, 1);
     }
     await asRole('postgres');
     await db.exec(`update public.authorized_devices set active = false where user_id = '${approved}'`);
@@ -72,10 +84,12 @@ test('RLS protege registros, autorizações e revogação sem apagar dados', asy
     for (const [table, insert] of Object.entries(inserts)) {
       assert.equal((await db.query(`select * from public.${table}`)).rows.length, 0);
       await denied(insert);
+      assert.equal((await db.query(`update public.${table} set created_at = now() returning id`)).rows.length, 0);
+      assert.equal((await db.query(`delete from public.${table} returning id`)).rows.length, 0);
     }
     await asRole('postgres');
     for (const table of Object.keys(inserts)) {
-      assert.equal((await db.query(`select * from public.${table}`)).rows.length, 2);
+      assert.equal((await db.query(`select * from public.${table}`)).rows.length, 1);
     }
   } finally {
     await db.close();

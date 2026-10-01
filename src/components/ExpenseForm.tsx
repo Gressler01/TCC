@@ -1,24 +1,30 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../constants/colors';
 import { NewExpense } from '../types/expense';
 import { parseExpenseAmount, parseExpenseDate } from '../utils/expenses';
+import { formatDate } from '../utils/dates';
 import { FormField } from './FormField';
 import { PrimaryButton } from './PrimaryButton';
 
-type ExpenseFormProps = { onSave: (expense: NewExpense) => void };
+type ExpenseFormProps = { initialValue?: NewExpense; onSave: (expense: NewExpense) => Promise<void> };
 
-export function ExpenseForm({ onSave }: ExpenseFormProps) {
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
+export function ExpenseForm({ onSave, initialValue }: ExpenseFormProps) {
+  const [description, setDescription] = useState(initialValue?.description ?? '');
+  const [amount, setAmount] = useState(initialValue ? (initialValue.amountInCents / 100).toFixed(2).replace('.', ',') : '');
   const [date, setDate] = useState(() => {
+    if (initialValue) return formatDate(initialValue.date);
     const today = new Date();
     return `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
   });
   const [error, setError] = useState('');
 
-  function handleSubmit() {
+  const submitted = useRef(false);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit() {
+    if (submitted.current) return;
     const amountInCents = parseExpenseAmount(amount);
     const parsedDate = parseExpenseDate(date);
     if (!description.trim()) {
@@ -33,7 +39,17 @@ export function ExpenseForm({ onSave }: ExpenseFormProps) {
       setError('Informe uma data válida no formato DD/MM/AAAA.');
       return;
     }
-    onSave({ description: description.trim(), date: parsedDate, amountInCents });
+    submitted.current = true;
+    setSaving(true);
+    setError('');
+    try {
+      await onSave({ description: description.trim(), date: parsedDate, amountInCents });
+    } catch {
+      setError('Não foi possível salvar o gasto. Tente novamente.');
+    } finally {
+      submitted.current = false;
+      setSaving(false);
+    }
   }
 
   return (
@@ -69,7 +85,7 @@ export function ExpenseForm({ onSave }: ExpenseFormProps) {
         maxLength={10}
       />
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-      <PrimaryButton label="Salvar gasto" onPress={handleSubmit} />
+      <PrimaryButton disabled={saving} label={saving ? 'Salvando...' : initialValue ? 'Salvar alterações' : 'Salvar gasto'} onPress={handleSubmit} />
     </View>
   );
 }

@@ -113,3 +113,76 @@ export async function createSale(sale: NewSale): Promise<Sale> {
     totalInCents: data.total_cents,
   };
 }
+
+export async function updateHarvest(id: string, harvest: NewHarvest): Promise<Harvest> {
+  const { data, error } = await supabase
+    .from('harvests')
+    .update({
+      harvest_date: harvest.date,
+      quantity_grams: harvest.quantityInGrams,
+      notes: harvest.notes || null,
+    })
+    .eq('id', id)
+    .select('id, harvest_date, quantity_grams, notes')
+    .single();
+
+  if (error) throw error;
+  return {
+    id: data.id,
+    date: data.harvest_date,
+    quantityInGrams: data.quantity_grams,
+    notes: data.notes ?? '',
+  };
+}
+
+export async function updateExpense(id: string, expense: NewExpense): Promise<Expense> {
+  const { data, error } = await supabase
+    .from('expenses')
+    .update({
+      description: expense.description,
+      expense_date: expense.date,
+      amount_cents: expense.amountInCents,
+    })
+    .eq('id', id)
+    .select('id, description, expense_date, amount_cents')
+    .single();
+
+  if (error) throw error;
+  return {
+    id: data.id,
+    description: data.description,
+    date: data.expense_date,
+    amountInCents: data.amount_cents,
+  };
+}
+
+export async function updateSale(id: string, sale: NewSale): Promise<Sale> {
+  const { data, error } = await supabase
+    .from('sales')
+    .update({
+      client: sale.client,
+      sale_date: sale.date,
+      sale_type: sale.saleType,
+      quantity: sale.quantity,
+      total_cents: sale.totalInCents,
+    })
+    .eq('id', id)
+    .select('id, client, sale_date, sale_type, quantity, total_cents')
+    .single();
+
+  if (error) throw error;
+  return {
+    id: data.id,
+    client: data.client,
+    date: data.sale_date,
+    saleType: data.sale_type,
+    quantity: Number(data.quantity),
+    totalInCents: data.total_cents,
+  };
+}
+
+export async function deleteRecord(table: 'harvests' | 'expenses' | 'sales', id: string): Promise<void> {
+  const { error } = await supabase.from(table).delete().eq('id', id).select('id').single();
+  // single() also rejects when RLS hides the row or it was already removed.
+  if (error) throw error;
+}

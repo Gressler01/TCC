@@ -20,7 +20,7 @@ import { MonthFilter } from '../components/MonthFilter';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { colors } from '../constants/colors';
 import { useHarvests } from '../contexts/HarvestContext';
-import type { NewHarvest } from '../types/harvest';
+import type { Harvest, NewHarvest } from '../types/harvest';
 import { formatHarvestQuantity, getMonthlyHarvests } from '../utils/harvests';
 
 type HarvestScreenProps = {
@@ -29,13 +29,15 @@ type HarvestScreenProps = {
 };
 
 export function HarvestScreen({ onGoHome, onSales }: HarvestScreenProps) {
-  const { harvests, period, setPeriod, loading, error, addHarvest } = useHarvests();
+  const { harvests, period, setPeriod, loading, error, addHarvest, editHarvest, removeHarvest } = useHarvests();
+  const [editing, setEditing] = useState<Harvest | null>(null);
   const [formVisible, setFormVisible] = useState(false);
   const { records, totalInGrams } = getMonthlyHarvests(harvests, period);
 
   async function saveHarvest(harvest: NewHarvest) {
     try {
-      await addHarvest(harvest);
+      if (editing) await editHarvest(editing.id, harvest);
+      else await addHarvest(harvest);
       setFormVisible(false);
     } catch {
       throw new Error('Não foi possível registrar a colheita. Tente novamente.');
@@ -61,7 +63,7 @@ export function HarvestScreen({ onGoHome, onSales }: HarvestScreenProps) {
       <FlatList
         data={records}
         keyExtractor={(harvest) => harvest.id}
-        renderItem={({ item }) => <HarvestCard {...item} />}
+        renderItem={({ item }) => <HarvestCard {...item} onEdit={() => { setEditing(item); setFormVisible(true); }} onDelete={() => removeHarvest(item.id)} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -77,7 +79,7 @@ export function HarvestScreen({ onGoHome, onSales }: HarvestScreenProps) {
                 {records.length} {records.length === 1 ? 'colheita registrada' : 'colheitas registradas'}
               </Text>
             </View>
-            <PrimaryButton label="+ Nova colheita" onPress={() => setFormVisible(true)} />
+            <PrimaryButton label="+ Nova colheita" onPress={() => { setEditing(null); setFormVisible(true); }} />
             <Text style={styles.sectionTitle}>Colheitas do mês</Text>
             {loading ? <Text style={styles.feedback}>Carregando colheitas...</Text> : null}
             {error ? <Text accessibilityRole="alert" style={styles.feedback}>{error}</Text> : null}
@@ -113,7 +115,7 @@ export function HarvestScreen({ onGoHome, onSales }: HarvestScreenProps) {
               >
                 <Text style={styles.backIcon}>‹</Text>
               </Pressable>
-              <Text style={styles.title}>Nova colheita</Text>
+              <Text style={styles.title}>{editing ? 'Editar colheita' : 'Nova colheita'}</Text>
               <View style={styles.headerButton} />
             </View>
             <ScrollView
@@ -121,7 +123,7 @@ export function HarvestScreen({ onGoHome, onSales }: HarvestScreenProps) {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              {formVisible && <HarvestForm onSave={saveHarvest} />}
+              {formVisible && <HarvestForm initialValue={editing ?? undefined} onSave={saveHarvest} />}
             </ScrollView>
           </KeyboardAvoidingView>
         </SafeAreaView>

@@ -8,13 +8,14 @@ import { parseHarvestQuantity } from '../utils/harvests';
 import { FormField } from './FormField';
 import { PrimaryButton } from './PrimaryButton';
 
-type HarvestFormProps = { onSave: (harvest: NewHarvest) => Promise<void> };
+type HarvestFormProps = { initialValue?: NewHarvest; onSave: (harvest: NewHarvest) => Promise<void> };
 
-export function HarvestForm({ onSave }: HarvestFormProps) {
-  const [date, setDate] = useState(() => formatDate(toLocalDateString(new Date())));
-  const [quantity, setQuantity] = useState('');
-  const [notes, setNotes] = useState('');
+export function HarvestForm({ onSave, initialValue }: HarvestFormProps) {
+  const [date, setDate] = useState(() => formatDate(initialValue?.date ?? toLocalDateString(new Date())));
+  const [quantity, setQuantity] = useState(initialValue ? String(initialValue.quantityInGrams / 1000).replace('.', ',') : '');
+  const [notes, setNotes] = useState(initialValue?.notes ?? '');
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
   const submitted = useRef(false);
 
   async function handleSubmit() {
@@ -36,13 +37,15 @@ export function HarvestForm({ onSave }: HarvestFormProps) {
     }
 
     submitted.current = true;
+    setSaving(true);
     try {
       setError('');
       await onSave({ date: parsedDate, quantityInGrams, notes: notes.trim() });
     } catch {
-      setError('Não foi possível registrar a colheita. Tente novamente.');
+      setError('Não foi possível salvar a colheita. Tente novamente.');
     } finally {
       submitted.current = false;
+      setSaving(false);
     }
   }
 
@@ -79,7 +82,7 @@ export function HarvestForm({ onSave }: HarvestFormProps) {
         style={styles.notes}
       />
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-      <PrimaryButton label="Salvar colheita" onPress={handleSubmit} />
+      <PrimaryButton disabled={saving} label={saving ? 'Salvando...' : initialValue ? 'Salvar alterações' : 'Salvar colheita'} onPress={handleSubmit} />
     </View>
   );
 }
