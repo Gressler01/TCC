@@ -32,7 +32,10 @@ export function NewSaleScreen({ onBack, onGoHome, initialValue, onSaved }: NewSa
   const [client, setClient] = useState(initialValue?.client ?? '');
   const [saleType, setSaleType] = useState<SaleType>(initialValue?.saleType ?? 'tray');
   const [quantity, setQuantity] = useState(initialValue ? String(initialValue.quantity).replace('.', ',') : '');
-  const [totalValue, setTotalValue] = useState(initialValue ? (initialValue.totalInCents / 100).toFixed(2).replace('.', ',') : '');
+  const [unitValue, setUnitValue] = useState(initialValue
+    ? (initialValue.totalInCents / 100 / initialValue.quantity).toFixed(2).replace('.', ',')
+    : '');
+  const [pricingChanged, setPricingChanged] = useState(false);
   const [date, setDate] = useState(() => formatDate(initialValue?.date ?? toLocalDateString(new Date())));
   const [saving, setSaving] = useState(false);
   const submitted = useRef(false);
@@ -40,10 +43,31 @@ export function NewSaleScreen({ onBack, onGoHome, initialValue, onSaved }: NewSa
 
   const quantityLabel = saleType === 'tray' ? 'Quantidade de bandejas' : 'Quantidade vendida (kg)';
   const quantityPlaceholder = saleType === 'tray' ? 'Ex.: 20' : 'Ex.: 12,5';
+  const unitValueLabel = saleType === 'tray' ? 'Valor da bandeja (R$)' : 'Valor do kg (R$)';
+  const normalizedQuantity = quantity.trim().replace(',', '.');
+  const validQuantity = saleType === 'tray'
+    ? /^\d+$/.test(normalizedQuantity)
+    : /^\d+(?:\.\d{1,3})?$/.test(normalizedQuantity);
+  const parsedQuantity = Number(normalizedQuantity);
+  const normalizedValue = unitValue.trim().replace(/^R\$\s?/, '');
+  const validValue = /^(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{1,2})?$/.test(normalizedValue);
+  const [whole, fraction = ''] = normalizedValue.replace(/\./g, '').split(',');
+  const unitInCents = Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
+  // Preserve historical totals when only the client or date is edited.
+  const totalInCents = initialValue && !pricingChanged
+    ? initialValue.totalInCents
+    : Math.round(unitInCents * Math.round(parsedQuantity * 1000) / 1000);
+  const validPricing = validQuantity && parsedQuantity > 0 && parsedQuantity <= 999999999.999
+    && validValue && Number.isSafeInteger(unitInCents) && unitInCents > 0
+    && Number.isSafeInteger(totalInCents) && totalInCents > 0;
+  const totalValue = ((validPricing ? totalInCents : 0) / 100)
+    .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   function handleSaleTypeChange(value: SaleType) {
     setSaleType(value);
     setQuantity('');
+    setUnitValue('');
+    setPricingChanged(true);
   }
 
   async function handleSubmit() {
@@ -53,20 +77,11 @@ export function NewSaleScreen({ onBack, onGoHome, initialValue, onSaved }: NewSa
       setError('Informe uma data válida que não seja futura.');
       return;
     }
-    if (!client.trim() || !quantity.trim() || !totalValue.trim()) {
-      Alert.alert('Campos obrigatórios', 'Preencha cliente, quantidade e valor da venda.');
+    if (!client.trim() || !quantity.trim() || !unitValue.trim()) {
+      Alert.alert('Campos obrigatórios', 'Preencha cliente, quantidade e valor unitário.');
       return;
     }
 
-    const normalizedQuantity = quantity.trim().replace(',', '.');
-    const validQuantity = saleType === 'tray'
-      ? /^\d+$/.test(normalizedQuantity)
-      : /^\d+(?:\.\d{1,3})?$/.test(normalizedQuantity);
-    const parsedQuantity = Number(normalizedQuantity);
-    const normalizedValue = totalValue.trim().replace(/^R\$\s?/, '');
-    const validValue = /^(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{1,2})?$/.test(normalizedValue);
-    const [whole, fraction = ''] = normalizedValue.replace(/\./g, '').split(',');
-    const totalInCents = Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
     if (client.trim().length > 120) {
       Alert.alert('Cliente inválido', 'Informe um nome de cliente com até 120 caracteres.');
       return;
@@ -77,8 +92,8 @@ export function NewSaleScreen({ onBack, onGoHome, initialValue, onSaved }: NewSa
         : 'Informe uma quantidade em kg maior que zero, com até três casas decimais.');
       return;
     }
-    if (!validValue || !Number.isSafeInteger(totalInCents) || totalInCents <= 0) {
-      Alert.alert('Valor inválido', 'Informe um valor de venda maior que zero.');
+    if (!validPricing) {
+      Alert.alert('Valor inválido', 'Informe um valor unitário maior que zero, com até duas casas decimais, e um total válido.');
       return;
     }
 
@@ -148,7 +163,7 @@ export function NewSaleScreen({ onBack, onGoHome, initialValue, onSaved }: NewSa
             <FormField
               keyboardType={saleType === 'tray' ? 'number-pad' : 'decimal-pad'}
               label={quantityLabel}
-              onChangeText={setQuantity}
+              onChangeText={(value) => { setQuantity(value); setPricingChanged(true); }}
               placeholder={quantityPlaceholder}
               returnKeyType="next"
               value={quantity}
@@ -156,11 +171,18 @@ export function NewSaleScreen({ onBack, onGoHome, initialValue, onSaved }: NewSa
 
             <FormField
               keyboardType="decimal-pad"
-              label="Valor total da venda"
-              onChangeText={setTotalValue}
+              label={unitValueLabel}
+              onChangeText={(value) => { setUnitValue(value); setPricingChanged(true); }}
               onSubmitEditing={handleSubmit}
               placeholder="R$ 0,00"
               returnKeyType="done"
+              value={unitValue}
+            />
+
+            <FormField
+              label="Valor total da venda"
+              editable={false}
+              accessibilityLabel={`Valor total da venda: ${totalValue}`}
               value={totalValue}
             />
 
